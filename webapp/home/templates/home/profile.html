@@ -1,0 +1,12 @@
+{% extends 'home/base.html' %}
+
+{% block title %}Profile Page{% endblock %}
+
+{% block main_content %}
+    {% if user.is_authenticated %}
+      <h1><p>{{ user_specific.username }}</p></h1>
+      <h2><p>{{ user_specific.city }}, {{ user_specific.state }}</p></h2>
+    {% else %}
+      <p>You must <a class="login" href="{% url 'login' %}">login</a> first to view <b>{{ user_specific.username }}'s</b> profile.</p>
+    {% endif %}
+{% endblock %}

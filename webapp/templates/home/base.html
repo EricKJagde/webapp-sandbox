@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>{{ title }}</title>
+  <meta name="description" content="This is the context description">
+  <meta name="author" content="EricKJagde">
+
+  <!--- Create icon for tabs in browsers --->
+  {% load static %}<link rel="icon" href="{% static 'home/images/logo.png' %}">
+
+  <!--- Load in static css data --->
+  {% load static %}<link rel="stylesheet" type="text/css" href="{% static 'home/css/style.css' %}">
+
+  <!--- Load in fa for: Dropdown button --->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+</head>
+<body>
+
+  <!--- Top navbar --->
+  <div id="navbar-id" class="navbar">
+    {% block navbar_content %}
+      <!--- If user is auth --->
+      {% if user.is_authenticated %}
+        <!--- Left side of navbar --->
+        <button class="open-sidenav-btn" onclick="toggleSidenavVis()">☰</button>
+        <a class="{{navbar_home_class}}" href="{% url 'home:index' %}">Home</a>
+        <a class="{{navbar_explore_class}}" href="{% url 'home:explore' %}">Explore</a>
+        <a class="{{navbar_post_class}}" href="{% url 'home:post' %}">Post</a>
+        <a class="{{navbar_roster_class}}" href="{% url 'home:roster' %}">Roster</a>
+        <a class="{{navbar_profile_class}}" href="{% url 'home:profile' %}">Profile</a>
+        <!--- Right side of navbar --->
+        <div class="dropdown">
+          <button onclick="myDropdownActivate()" class="dropbtn">{{ user.username }}
+            <i class="fa fa-caret-down"></i>
+          </button>
+          <div id="myDropdown" class="dropdown-content">
+            <a href="{% url 'home:about' %}">About</a>
+            <a href="{% url 'logout' %}">Sign Out</a>
+          </div>
+        </div>
+      <!--- If user is not auth --->
+      {% else %}
+        <!--- Left side of navbar --->
+        <a class="{{navbar_home_class}}" href="{% url 'home:index' %}">Home</a>
+        <a class="{{navbar_about_class}}" href="{% url 'home:about' %}">About</a>
+        <!--- Left side of navbar --->
+        <a class="login" href="{% url 'login' %}">Login</a>
+      {% endif %}
+    {% endblock %}
+  </div>
+
+  <!--- Sidebar --->
+  <div id="sidebar-id" class="sidebar">
+    {% block sidebar_content %}
+    {% endblock %}
+  </div>
+
+  <!--- This is the main content per page --->
+  <div id="main">
+    {% block main_content %}
+      <p>No content added to this page yet.</p>
+    {% endblock %}
+  </div>
+
+  <!--- Footer at the bottom --->
+  <div id="footer-id" class="footer">
+    {% block footer_content %}
+      <p>Copyright 2021. BarNav. All rights reserved.</p>
+    {% endblock %}
+  </div>
+
+  <script src="{% static 'home/js/home.js' %}"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{% extends 'home/base.html' %}
+
+{% block title %}Explore Page{% endblock %}
+
+{% block main_content %}
+  {% if user.is_authenticated %}
+    {% if user_list %}
+      <ul>
+      {% for user_to_show in user_list %}
+        <li><a href="{% url 'home:profile_spec' user_to_show.username %}">{{ user_to_show.username }}</a></li>
+      {% endfor %}
+      </ul>
+    {% else %}
+      <p>No profiles are available.</p>
+    {% endif %}
+  {% else %}
+    <p>You must login first.</p>
+  {% endif %}
+{% endblock %}

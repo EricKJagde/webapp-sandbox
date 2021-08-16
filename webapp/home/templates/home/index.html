@@ -1,0 +1,13 @@
+{% extends 'home/base.html' %}
+
+{% block title %}Home Page{% endblock %}
+
+{% block main_content %}
+  {% if user.is_authenticated %}
+    <p>START</p>
+    <p>END</p>
+  {% else %}
+    <p>You must login first.</p>
+    {% load static %} <img src="{% static 'home/images/logo.png' %}" class="center" width="500" height="333">
+  {% endif %}
+{% endblock %}
