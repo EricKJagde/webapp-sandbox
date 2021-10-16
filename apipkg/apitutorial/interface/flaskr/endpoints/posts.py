@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from flask_restplus import Resource
+from flask import request
 from werkzeug.exceptions import abort
 
-from apitutorial.interface.auth.auth import token_required
+from apitutorial.interface.auth.auth import token_required_user
 
 from apitutorial.interface.init_api import api
 from apitutorial.interface.flaskr import common
@@ -19,7 +20,6 @@ class PostListResource(Resource):
     Class Description
     """
 
-    @token_required
     @api.marshal_list_with(flaskr_post)
     @api.response(200, 'Data successfully retreived.')
     def get(self):
@@ -57,10 +57,12 @@ class PostResource(Resource):
         #update_post(id, data)
         return None, 204
 
+    @token_required_user
     @api.response(204, 'Post successfully deleted.')
-    def delete(self, id):
+    def delete(self, id, username):
         """
         Deletes blog post.
         """
+        print(request.headers)
         #delete_post(id)
         return None, 204

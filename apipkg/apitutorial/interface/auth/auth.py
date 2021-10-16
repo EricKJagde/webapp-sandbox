@@ -14,32 +14,39 @@ from apitutorial.database import get_db
 from apitutorial.interface.init_api import api
 
 
+HASH_ALGO = 'HS256'
+
+
 ns = api.namespace('auth', description='Operations relating to authorization')
 
 
-def token_required(func):
-    # This is the correct way to write a decorator
+def token_required_user(func):
     @functools.wraps(func)
     def wrapped_view(*args, **kwargs):
-        token = None
+        print('*'*79)
         # jwt is passed in the request header
-        print(request.headers)
-        if 'token' in request.headers:
-            token = request.headers['token']
-        # Return 401 if token is not passed
-        if not token:
-            return jsonify({'message' : 'Token is missing !!'}), 401
+        if 'Authorization' not in request.headers:
+            return jsonify({'message' : 'Token is missing. Login first.'}), 401
+        token_key = request.headers['Authorization']
 
+        # Using Bearer tokens
+        start_str = 'Bearer '
+        if not token_key.startswith(start_str):
+            return jsonify({'message' : 'Wrong authorization approach!'}), 401
+        token = token_key[len(start_str):]
+        print(token)
+
+        # Decoding the payload to fetch the stored details
         try:
-            # Decoding the payload to fetch the stored details
-            data = jwt.decode(token, 'dev')#app.config['SECRET_KEY'])
-            user_id = data['public_id']
-        except:
-            return jsonify({
-                'message' : 'Token is invalid !!'
-            }), 401
+            data = jwt.decode(token, 'dev', algorithms=HASH_ALGO)#app.config['SECRET_KEY'])
+            print(data)
+            username = data['username']
+        except jwt.exceptions.ExpiredSignatureError:
+            abort(401, 'Token has expired. Please login again.')
+        except Exception:
+            abort(401, 'Token is invalid.')
         # Returns the current logged in users contex to the routes
-        return  func( *args, **kwargs)
+        return func(username, *args, **kwargs)
 
     return wrapped_view
 
@@ -133,10 +140,11 @@ class LoginResource(Resource):
             )
 
         # Generates the JWT Token
-        token = jwt.encode({
-            'public_id': username,
+        payload = {
+            'username': username,
             'exp' : datetime.utcnow() + timedelta(minutes = 30)
-        }, 'dev')#app.config['SECRET_KEY'])
+        }
+        token = jwt.encode(payload, 'dev', algorithm=HASH_ALGO)#app.config['SECRET_KEY'])
 
         return make_response(jsonify({'token' : token}), 201)
 
