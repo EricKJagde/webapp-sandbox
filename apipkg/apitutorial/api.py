@@ -1,44 +1,56 @@
 import os
 
-from flask import Flask, Blueprint
+from flask import Blueprint
 
-from apitutorial import database as db
+from apitutorial.globals import APP, API
+from apitutorial import database as db_pkg
 
-from apitutorial.interface.init_api import api
 from apitutorial.interface.auth.auth import ns as ns_auth
 from apitutorial.interface.flaskr.endpoints.posts import ns as ns_flaskr_posts
 from apitutorial.interface.flaskr.endpoints.users import ns as ns_flaskr_users
 
 
-def init_api_app(app):
+def _load_app_config(config=None):
+    if config is None:
+        APP.config.from_mapping(
+            SECRET_KEY='dev',
+            JWT_SECRET_KEY='dev',
+            DATABASE=os.path.join(APP.instance_path, 'flaskr.sqlite'),
+        )
+    else:
+        # Load other config
+        APP.config.from_mapping(config)
+
+
+def _init_app():
     # Set up database
-    db.init_app(app)
+    db_pkg.init_app(APP)
 
     # Make a blueprint for the api
     blueprint = Blueprint('api', __name__, url_prefix='/api')
-    api.init_app(blueprint)
-    api.add_namespace(ns_auth)
-    api.add_namespace(ns_flaskr_posts)
-    api.add_namespace(ns_flaskr_users)
-    app.register_blueprint(blueprint)
+    API.init_app(blueprint)
+    API.add_namespace(ns_auth)
+    API.add_namespace(ns_flaskr_posts)
+    API.add_namespace(ns_flaskr_users)
+    APP.register_blueprint(blueprint)
 
 
-def main():
-    # Create app
-    app = Flask(__name__, instance_relative_config=True)
-    app.config.from_mapping(
-        SECRET_KEY='dev',
-        DATABASE=os.path.join(app.instance_path, 'flaskr.sqlite'),
-    )
-
+def create_app(config=None):
     # Ensure the instance folder exists
     try:
-        os.makedirs(app.instance_path)
+        os.makedirs(APP.instance_path)
     except OSError:
         pass
 
+    _load_app_config(config)
+    _init_app()
+
+    return APP
+
+
+def main():
     # Init app
-    init_api_app(app)
+    app = create_app()
 
     # Run app
     app.run(debug=True)

@@ -1,15 +1,13 @@
+import os
+
 import sqlite3
 
 import click
-"""
-g is a special object that is unique for each request. It is used
-to store data that might be accessed by multiple functions during
-the request. The connection is stored and reused instead of creating
-a new connection if get_db is called a second time in the same
-request.
-"""
+
 from flask import current_app, g
 from flask.cli import with_appcontext
+
+from apitutorial.globals import PATH_ROOT
 
 
 def get_db():
@@ -34,15 +32,16 @@ def init_db():
     db = get_db()
 
     # open_resource is relative to flaskr
-    with current_app.open_resource('schema.sql') as f:
+    with current_app.open_resource(os.path.join('schema.sql')) as f:
         db.executescript(f.read().decode('utf8'))
 
 
-"""
-with_appcontext is a Flask decorator in the flask.cli module that wraps a
-callback to guarantee it will be called with a script's application
-context.
-"""
+def init_db_test():
+    db = get_db()
+    with open(os.path.join(PATH_ROOT, 'database', 'schema.sql')) as f:
+        db.executescript(f.read())
+
+
 @click.command('init-db')  # $ flask init-db on the command line
 @with_appcontext
 def init_db_command():

@@ -5,25 +5,25 @@ from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for,
     jsonify, make_response
 )
+from flask_jwt_extended import create_access_token
 from flask_restplus import Resource
 import jwt
 from werkzeug.exceptions import abort
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from apitutorial.database import get_db
-from apitutorial.interface.init_api import api
+from apitutorial.globals import API
 
 
 HASH_ALGO = 'HS256'
 
 
-ns = api.namespace('auth', description='Operations relating to authorization')
+ns = API.namespace('auth', description='Operations relating to authorization')
 
 
 def token_required_user(func):
     @functools.wraps(func)
     def wrapped_view(*args, **kwargs):
-        print('*'*79)
         # jwt is passed in the request header
         if 'Authorization' not in request.headers:
             return jsonify({'message' : 'Token is missing. Login first.'}), 401
@@ -38,7 +38,7 @@ def token_required_user(func):
 
         # Decoding the payload to fetch the stored details
         try:
-            data = jwt.decode(token, 'dev', algorithms=HASH_ALGO)#app.config['SECRET_KEY'])
+            data = jwt.decode(token, 'dev', algorithms=HASH_ALGO)
             print(data)
             username = data['username']
         except jwt.exceptions.ExpiredSignatureError:
@@ -57,8 +57,8 @@ class RegisterResource(Resource):
     Class Description
     """
 
-    @api.response(204, 'User successfully created.')
-    @api.response(401, 'User already exists.')
+    @API.response(204, 'User successfully created.')
+    @API.response(401, 'User already exists.')
     def put(self):
         """
         Register a new user.
@@ -97,26 +97,26 @@ class LoginResource(Resource):
     Class Description
     """
 
-    @api.response(204, 'User successfully created.')
-    @api.response(204, 'User is already logged in.')
-    @api.response(401, 'Data does not exist.')  # I think this code is right??
-    @api.response(401, 'User already exists.')  # I think this code is right??
-    def put(self):
+    @API.response(201, 'Created')
+    @API.response(401, 'Unauthorized')
+    @API.response(403, 'Forbidden')
+    def post(self):
         """
         Login request.
         """
         rx_json = request.get_json(force=True)
-
-        if not rx_json or 'username' not in rx_json or 'password' not in rx_json:
+        if not rx_json:
             # returns 401 if any email or / and password is missing
             return make_response(
-                'Could not verify since PUT request did not have all the necessary information',
-                401,
-                {'WWW-Authenticate' : 'Basic realm ="Login required !!"'}
+                jsonify({'message': 'No data in request'}), 401
             )
 
-        username = rx_json['username']
-        password = rx_json['password']
+        username = rx_json.get('username', None)
+        password = rx_json.get('password', None)
+        if username is None or password is None:
+            return make_response(
+                jsonify({'message': 'Need username and password'}), 401
+            )
 
         db = get_db()
         user = db.execute(
@@ -124,29 +124,23 @@ class LoginResource(Resource):
         ).fetchone()
 
         if user is None:
-            # returns 401 if user does not exist
             return make_response(
-                'User does not exist',
-                401,
-                {'WWW-Authenticate' : 'Basic realm ="User does not exist !!"'}
+                jsonify({'message': 'User does not exist'}), 401
             )
 
         if not check_password_hash(user['password'], password):
-            # Returns 403 if password is wrong
             return make_response(
-                'Incorrect password',
-                403,
-                {'WWW-Authenticate' : 'Basic realm ="Wrong Password !!"'}
+                jsonify({'message': 'Incorrect password'}), 403
             )
 
-        # Generates the JWT Token
-        payload = {
-            'username': username,
-            'exp' : datetime.utcnow() + timedelta(minutes = 30)
-        }
-        token = jwt.encode(payload, 'dev', algorithm=HASH_ALGO)#app.config['SECRET_KEY'])
+        access_token = create_access_token(
+            identity=username,
+            expires_delta=timedelta(minutes=30)
+        )
 
-        return make_response(jsonify({'token' : token}), 201)
+        return make_response(
+            jsonify({"access_token": access_token}), 201
+        )
 
 
 @ns.route('/logout/')
@@ -155,7 +149,7 @@ class LogoutResource(Resource):
     Class Description
     """
 
-    @api.response(204, 'User logged out')
+    @API.response(204, 'No Content')
     def get(self):
         """
         Logout request.
